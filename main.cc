@@ -3,6 +3,7 @@
 #include<complex>                                                                                    
 #include<cstdlib>
 #include <ctime>
+#include <string>
 using namespace std;                                                                                 
 using namespace arma;                                                                                
 
@@ -13,6 +14,7 @@ class Particle {
 
         int cells;
         int disorderedSites;
+        string shape;
         mat sublatOne, sublatTwo;
         cx_mat Hamiltonian;
         cx_mat eigvecs;
@@ -41,6 +43,7 @@ class Spherical: public Particle {
         Spherical(double pSize, double orderpSize) {
             radius = pSize; // radius in distance units
             orderRadius = orderpSize; // radius above which disorder starts
+            shape = "Spherical";
         }
 
         bool WithinParticle (rowvec dummyVec) {
@@ -84,8 +87,8 @@ class Spherical: public Particle {
         } 
 
         void PrintInfo (double disorderStrength) {
-       cout << "Total # of sublattice sites: " << 2*cells << " within radius " << radius << endl;
-       cout << "# of disordered sublattice sites: " << disorderedSites << " Strength: " << disorderStrength << " above radius " << orderRadius << endl;
+            cout << "Total # of sublattice sites: " << 2*cells << " within radius " << radius << " of " << shape << "particle" << endl;
+            cout << "# of disordered sublattice sites: " << disorderedSites << " Strength: " << disorderStrength << " above radius " << orderRadius << endl;
         }
 };
 
@@ -96,6 +99,7 @@ class Cubic: public Particle {
         Cubic (double pSize, double orderpSize) {
             edgeSize = pSize;
             orderEdgeSize = orderpSize;
+            shape = "Cubic";
         }
 
         bool WithinParticle (rowvec dummyVec) {
@@ -119,9 +123,34 @@ class Cubic: public Particle {
         }
 
         void PrintInfo (double disorderStrength) {
- cout << "Total # of sublattice sites: " << 2*cells << " within cube of size " << edgeSize << endl;
-       cout << "# of disordered sublattice sites: " << disorderedSites << " Strength: " << disorderStrength << " in cubic shell of size > " << orderEdgeSize << endl;
+            cout << "Total # of sublattice sites: " << 2*cells << " within cube of size " << edgeSize << endl;
+            cout << "# of disordered sublattice sites: " << disorderedSites << " Strength: " << disorderStrength << " in cubic shell of size > " << orderEdgeSize << endl;
         }
+
+};
+
+class Rhombohedral: public Particle {
+    public:
+        double edgeSize;
+        double orderEdgeSize;
+        Rhombohedral (double pSize, double orderpSize) {
+            edgeSize = pSize;
+            orderEdgeSize = orderpSize;
+            shape = "Rhombohedral";
+        }
+
+        bool WithinParticle (rowvec dummyVec) {
+            return true;
+        } 
+        void PrintInfo (double disorderStrength) {
+            cout << "Total # of sublattice sites: " << 2*cells << " within cube of size " << edgeSize << endl;
+            cout << "# of disordered sublattice sites: " << disorderedSites << " Strength: " << disorderStrength << " in cubic shell of size > " << orderEdgeSize << endl;
+        }
+
+        bool OutsideOrderCore (rowvec dummyVec) { 
+            return true; // TODO
+        }
+
 
 };
 
@@ -156,7 +185,8 @@ int main(){
         cout << "Input: "<< sizeCells << " " << pSizeCells << " " <<  disorderStrength << " " << disorderCoverage << endl;
 
     //Spherical myParticle(pSizeCells*latVecNorm, pSizeCells*latVecNorm - sublatVecNorm);
-    Cubic myParticle(pSizeCells*latVecNorm, pSizeCells*latVecNorm - sublatVecNorm);
+    //Cubic myParticle(pSizeCells*latVecNorm, pSizeCells*latVecNorm - sublatVecNorm);
+    Rhombohedral myParticle(pSizeCells*latVecNorm, pSizeCells*latVecNorm - sublatVecNorm);
 
     int nCells = 8*sizeCells*sizeCells*sizeCells; // # unit cells 
     int pCells = 0; // # unit cells belonging to the particle
@@ -178,16 +208,16 @@ int main(){
     sigma_y.set_imag(dummy_sigma_y);
     sigma_z.set_real(dummy_sigma_z);
 
+    // Rhombohedral has the shape of the unit cell, so don't need to carve out
+    if (myParticle.shape == "Rhombohedral") {
+        sizeCells = pSizeCells; 
+    } 
+
     // Set up lattice and calculate number of cells within particle
     for (int i=-sizeCells; i<sizeCells; i++) {
         for (int j=-sizeCells;  j<sizeCells; j++) {
             for (int k=-sizeCells; k<sizeCells; k++) {
                 dummyVec=i*latVec1+j*latVec2+k*latVec3-comShift;
-                sublatOne(index,0)=index;
-                sublatOne(index,span(1,3))=dummyVec;
-                sublatTwo(index,0)=index;
-                sublatTwo(index,span(1,3))=dummyVec+sublatVec;
-                index++;
                 if (myParticle.WithinParticle(dummyVec)) {
                     pcomShift=pcomShift+2*dummyVec+sublatVec;
                     pCells++;
@@ -198,7 +228,6 @@ int main(){
 
     // Finding particle's COM
     pcomShift=0.5*pcomShift/pCells;
-    index=0;
 
     // Set up data structures for the particle
     myParticle.SetDataStructures(pCells);
@@ -284,7 +313,7 @@ int main(){
         } 
     }
 
-     //  myParticle.AddDisorder(disorderStrength, disorderCoverage, delta);
+    //  myParticle.AddDisorder(disorderStrength, disorderCoverage, delta);
 
     // abs returns a matrix, max returns a vector, 2nd max - largest value
     if (max(max(abs(myParticle.Hamiltonian-myParticle.Hamiltonian.t()))) > delta ) {
