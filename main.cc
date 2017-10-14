@@ -35,8 +35,6 @@ class Particle {
 };
 
 class Spherical: public Particle {
-    private:
-        double dummy;
     public:
         double radius;
         double orderRadius;
@@ -54,15 +52,8 @@ class Spherical: public Particle {
             }
         }
 
-        bool OutsideOrderCore (rowvec dummyVec) {
-            if (dot(dummyVec, dummyVec) > orderRadius*orderRadius) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-
         void AddDisorder(double disorderStrength, double disorderCoverage, double delta){ 
+            double dummy;
             rowvec dummyVec(3);
             disorderedSites=0;
             srand(time(0));
@@ -87,7 +78,7 @@ class Spherical: public Particle {
         } 
 
         void PrintInfo (double disorderStrength) {
-            cout << "Total # of sublattice sites: " << 2*cells << " within radius " << radius << " of " << shape << "particle" << endl;
+            cout << "Total # of sublattice sites: " << 2*cells << " within sphere of radius " << radius  << endl;
             cout << "# of disordered sublattice sites: " << disorderedSites << " Strength: " << disorderStrength << " above radius " << orderRadius << endl;
         }
 };
@@ -111,16 +102,37 @@ class Cubic: public Particle {
                 return false;
             }
         }
-
-        bool OutsideOrderCore (rowvec dummyVec) {
-            if (dummyVec(0) < -orderEdgeSize && dummyVec(0) > orderEdgeSize &&
-                    dummyVec(1) < -orderEdgeSize && dummyVec(1) > orderEdgeSize &&
-                    dummyVec(2) < -orderEdgeSize && dummyVec(2) > orderEdgeSize ) {
-                return true;
-            } else {
-                return false;
+       
+        void AddDisorder(double disorderStrength, double disorderCoverage, double delta){ 
+            double dummy;
+            rowvec dummyVec(3);
+            disorderedSites=0;
+            srand(time(0));
+            for (int i=0; i<cells; i++) {
+                if (1.0*rand()/RAND_MAX < disorderCoverage) {
+                    dummyVec=sublatOne(i, span(1,3)); 
+                    if (dummyVec(0) > -orderEdgeSize && dummyVec(0) < orderEdgeSize &&
+                    dummyVec(1) > -orderEdgeSize && dummyVec(1) < orderEdgeSize &&
+                    dummyVec(2) > -orderEdgeSize && dummyVec(2) < orderEdgeSize ) {
+                        disorderedSites++;
+                        dummy=(-1.0+2.0*rand()/RAND_MAX);
+                        Hamiltonian(4*i,4*i)=disorderStrength*dummy;
+                        Hamiltonian(4*i+1,4*i+1)=disorderStrength*dummy;
+                    }
+                    dummyVec=sublatTwo(i, span(1,3)); 
+                    if (dummyVec(0) > -orderEdgeSize && dummyVec(0) < orderEdgeSize &&
+                    dummyVec(1) > -orderEdgeSize && dummyVec(1) < orderEdgeSize &&
+                    dummyVec(2) > -orderEdgeSize && dummyVec(2) < orderEdgeSize ) {
+                        disorderedSites++;
+                        dummy=(-1.0+2.0*rand()/RAND_MAX);
+                        Hamiltonian(4*i+2,4*i+2)=disorderStrength*dummy;
+                        Hamiltonian(4*i+3,4*i+3)=disorderStrength*dummy;
+                    }
+                }
             }
-        }
+        } 
+
+
 
         void PrintInfo (double disorderStrength) {
             cout << "Total # of sublattice sites: " << 2*cells << " within cube of size " << edgeSize << endl;
@@ -143,15 +155,27 @@ class Rhombohedral: public Particle {
             return true;
         } 
         void PrintInfo (double disorderStrength) {
-            cout << "Total # of sublattice sites: " << 2*cells << " within cube of size " << edgeSize << endl;
-            cout << "# of disordered sublattice sites: " << disorderedSites << " Strength: " << disorderStrength << " in cubic shell of size > " << orderEdgeSize << endl;
+            cout << "Total # of sublattice sites: " << 2*cells << " within rhomboid of size " << edgeSize << endl;
+            cout << "# of disordered sublattice sites: " << disorderedSites << " Strength: " << disorderStrength << " coveing the whole rhombohedral particle" << endl;
         }
-
-        bool OutsideOrderCore (rowvec dummyVec) { 
-            return true; // TODO
-        }
-
-
+        
+        void AddDisorder(double disorderStrength, double disorderCoverage, double delta){ 
+            double dummy;
+            disorderedSites=0;
+            srand(time(0));
+            for (int i=0; i<cells; i++) {
+                if (1.0*rand()/RAND_MAX < disorderCoverage) {
+                        disorderedSites++;
+                        dummy=(-1.0+2.0*rand()/RAND_MAX);
+                        Hamiltonian(4*i,4*i)=disorderStrength*dummy;
+                        Hamiltonian(4*i+1,4*i+1)=disorderStrength*dummy;
+                        disorderedSites++;
+                        dummy=(-1.0+2.0*rand()/RAND_MAX);
+                        Hamiltonian(4*i+2,4*i+2)=disorderStrength*dummy;
+                        Hamiltonian(4*i+3,4*i+3)=disorderStrength*dummy;
+                    }
+                }
+            }
 };
 
 
@@ -178,20 +202,26 @@ int main(){
 
     const double delta = 0.01; // small number for numerical comparisons
 
-    // TODO do input file with keywords
     ifstream inputfile;
     inputfile.open("input.txt");
-    while (inputfile >> sizeCells >> pSizeCells >> disorderStrength >> disorderCoverage) 
+    char buffer [3000];
+    string line;
+    while (getline(inputfile, line)) {
+            sscanf(line.c_str(), "sizeCells = %d %s", &sizeCells);
+            sscanf(line.c_str(), "pSizeCells = %d %s", &pSizeCells, buffer);
+            sscanf(line.c_str(), "disorderStrength = %lf %s", &disorderStrength, buffer);
+            sscanf(line.c_str(), "disorderCoverage = %lf %s", &disorderCoverage, buffer);
+            }
         cout << "Input: "<< sizeCells << " " << pSizeCells << " " <<  disorderStrength << " " << disorderCoverage << endl;
 
-    //Spherical myParticle(pSizeCells*latVecNorm, pSizeCells*latVecNorm - sublatVecNorm);
+    Spherical myParticle(pSizeCells*latVecNorm, pSizeCells*latVecNorm - sublatVecNorm);
     //Cubic myParticle(pSizeCells*latVecNorm, pSizeCells*latVecNorm - sublatVecNorm);
-    Rhombohedral myParticle(pSizeCells*latVecNorm, pSizeCells*latVecNorm - sublatVecNorm);
+    //Rhombohedral myParticle(pSizeCells*latVecNorm, pSizeCells*latVecNorm - sublatVecNorm);
 
     int nCells = 8*sizeCells*sizeCells*sizeCells; // # unit cells 
     int pCells = 0; // # unit cells belonging to the particle
 
-    int dummy = 0, index = 0; 
+    int dummy = 0; 
     rowvec dummyVec(3);
     cx_mat dummyMat(2,2);
     rowvec pcomShift(3);
@@ -238,28 +268,23 @@ int main(){
             for (int k=-sizeCells; k<sizeCells; k++) {
                 dummyVec=i*latVec1+j*latVec2+k*latVec3-comShift;
                 if (myParticle.WithinParticle(dummyVec)) {
-                    myParticle.sublatOne(index,0)=index;
-                    myParticle.sublatOne(index,span(1,3))=dummyVec-pcomShift; 
-                    myParticle.sublatTwo(index,0)=index;
-                    myParticle.sublatTwo(index,span(1,3))=dummyVec+sublatVec-pcomShift;
-                    index++;
-                    if (myParticle.OutsideOrderCore(dummyVec)) {
-                        dummy++;
-                    }
+                    myParticle.sublatOne(dummy,0)=dummy;
+                    myParticle.sublatOne(dummy,span(1,3))=dummyVec-pcomShift; 
+                    myParticle.sublatTwo(dummy,0)=dummy;
+                    myParticle.sublatTwo(dummy,span(1,3))=dummyVec+sublatVec-pcomShift;
+                    dummy++;
                 }
             }
         }
     }   
 
-    dummy=0; index=0;
+    dummy=0;
+
     // Set up the Hamiltonian
     for (int i=0; i<pCells; i++) {
         for (int j=0; j<pCells; j++) {
-
-            /* dummyVec=sublatOne(i,span(1,3))-sublatTwo(j,span(1,3));*/
-            dummyVec=myParticle.sublatOne(i,span(1,3))-myParticle.sublatTwo(j,span(1,3));
-
             // Set up nearest neighbour hoppings (between sublattices)
+            dummyVec=myParticle.sublatOne(i,span(1,3))-myParticle.sublatTwo(j,span(1,3));
             if (dot(dummyVec,dummyVec) < sublatVecNorm*sublatVecNorm+delta) {
                 if (i==j) {
                     // hoppings within a cell i
@@ -268,7 +293,6 @@ int main(){
                 } else {
                     // hoppings from sublatTwo of cell j to sublatOne of cell i
                     myParticle.Hamiltonian(span(4*i+0,4*i+1),span(4*j+2,4*j+3))+=(tHopping)*unity;
-
                     // hoppings from sublatOne of cell i to sublatTwo of cell j
                     myParticle.Hamiltonian(span(4*j+2,4*j+3),span(4*i+0,4*i+1))+=(tHopping)*unity;
                 }
@@ -294,26 +318,22 @@ int main(){
                     dummyVec = cross(-latVec3+sublatVec, dummyVec+latVec3-sublatVec);
                 } else {}
                 dummyMat=dummyVec(0)*sigma_x+dummyVec(1)*sigma_y+dummyVec(2)*sigma_z;
-
                 // See if both atoms are connected to the same linking atom
                 // hoppings from cell j to cell i within sublattice One
                 myParticle.Hamiltonian(span(4*i,4*i+1),span(4*j,4*j+1))=spinOrbitCoupling*dummyMat;
-
                 // hoppings from cell i to cell j within sublattice One
                 // Minus sign for hopping in opposite direction
                 myParticle.Hamiltonian(span(4*j,4*j+1),span(4*i,4*i+1))=-spinOrbitCoupling*dummyMat;
                 // hoppings from cell j to cell i within sublattice Two
                 // Minus sign for sublattice  
                 myParticle.Hamiltonian(span(4*i+2,4*i+3),span(4*j+2,4*j+3))=-spinOrbitCoupling*dummyMat;
-
                 // hoppings from cell i to cell j within sublattice Two
                 myParticle.Hamiltonian(span(4*j+2,4*j+3),span(4*i+2,4*i+3))=spinOrbitCoupling*dummyMat;
-
             }
         } 
     }
 
-    //  myParticle.AddDisorder(disorderStrength, disorderCoverage, delta);
+    myParticle.AddDisorder(disorderStrength, disorderCoverage, delta);
 
     // abs returns a matrix, max returns a vector, 2nd max - largest value
     if (max(max(abs(myParticle.Hamiltonian-myParticle.Hamiltonian.t()))) > delta ) {
@@ -325,27 +345,27 @@ int main(){
 
     myParticle.PrintInfo(disorderStrength);
 
-    // Find the middle of the spectrum (Dirac point, E=0, for clean spectrum)
+    // Find the middle of the spectrum (Dirac point, E=0, for clean spectrum) 
     for (int i=0; i<4*pCells-1;i++) {
         if (myParticle.eigvals(i) > 0 && myParticle.eigvals(i-1) < 0) {
-            dummy/*flag*/ =i ;
+            dummy = i ;
         }
     }
-    cout << "State above E #: " << dummy << " with E= " << myParticle.eigvals(dummy) << endl; 
+    cout << "First state above E=0 is #: " << dummy << " with E= " << myParticle.eigvals(dummy) << endl; 
     dummy=2*pCells;
     cout << "Picking state #: " << dummy << " with E= " << myParticle.eigvals(dummy) << endl; 
 
-    mat probDensity(2*pCells,4+pCells); /* */
+    mat probDensity(2*pCells,4); 
     probDensity(span(0,pCells-1),span(0,2))=myParticle.sublatOne.cols(1,3);
     probDensity(span(pCells,2*pCells-1),span(0,2))=myParticle.sublatTwo.cols(1,3);
 
     // Calculate probability density of probDensity labelled dummy and all probDensity above it at each lattice site
     for (int i=0; i<pCells; i++) {
-        for (int j=0; j<1; j++) { /* */
-            probDensity(i,3+j)=norm(myParticle.eigvecs(span(4*i,4*i+1),dummy+j))*norm(myParticle.eigvecs(span(4*i,4*i+1),dummy+j));
-            probDensity(pCells+i,3+j)=norm(myParticle.eigvecs(span(4*i+2,4*i+3),dummy+j))*norm(myParticle.eigvecs(span(4*i+2,4*i+3),dummy+j));
+            probDensity(i,3)=norm(myParticle.eigvecs(span(4*i,4*i+1),dummy))*norm(myParticle.eigvecs(span(4*i,4*i+1),dummy));
+            probDensity(pCells+i,3)=norm(myParticle.eigvecs(span(4*i+2,4*i+3),dummy))*norm(myParticle.eigvecs(span(4*i+2,4*i+3),dummy));
         }    
-    }   
+
+    // Save all eigenvalues and a particular eigenvector
     myParticle.eigvals.save("output_eigvals.txt",raw_ascii);
     probDensity.save("output_state.txt", raw_ascii);
 
