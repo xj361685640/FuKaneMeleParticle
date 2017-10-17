@@ -42,7 +42,7 @@ int main(){
     char buffer [512];
     string line;
     while (getline(inputfile, line)) {
-        sscanf(line.c_str(), "sizeCells = %d %s", &sizeCells);
+        sscanf(line.c_str(), "sizeCells = %d %s", &sizeCells, buffer);
         sscanf(line.c_str(), "particleSizeCells = %d %s", &pSizeCells, buffer);
         sscanf(line.c_str(), "disorderStrength = %lf %s", &disorderStrength, buffer);
         sscanf(line.c_str(), "disorderCoverage = %lf %s", &disorderCoverage, buffer);
@@ -60,16 +60,11 @@ int main(){
     } else { cout << "Wrong particle type - exiting" << endl; return 1;}
     cout << "Input: "<< sizeCells << " " << pSizeCells << " " <<  disorderStrength << " " << disorderCoverage << " " << myParticle->shape << endl;
 
-    int nCells = 8*sizeCells*sizeCells*sizeCells; // # unit cells 
     int pCells = 0; // # unit cells belonging to the particle
-
     int dummy = 0; 
     rowvec dummyVec(3);
     cx_mat dummyMat(2,2);
     rowvec pcomShift(3);
-
-    mat sublatOne(nCells, 4); // Sites at origin of a unit cell
-    mat sublatTwo(nCells, 4); // Sites at sublatVec in a unit cell
 
     cx_mat unity(2,2), sigma_x(2,2), sigma_y(2,2), sigma_z(2,2); // Pauli matrices
     unity.fill(0), sigma_x.fill(0), sigma_y.fill(0), sigma_z.fill(0);
