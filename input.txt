@@ -1,4 +1,4 @@
-particleShape = C // types supported are 's' for Spherical, 'c' for Cubic and 'r' for Rhombohedral'
+particleShape = s // types supported are 's' for Spherical, 'c' for Cubic and 'r' for Rhombohedral', 'h' for (spherical) Shell
 particleSizeCells = 4 // int; size of particle in unit cells
 disorderStrength = 0 // float; amplitute of random on-site disorder potential
 disorderCoverage = 1 // float [0:1]; fraction of atoms carrying on-site potential in disorder region

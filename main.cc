@@ -8,6 +8,7 @@
 #include "Spherical.h"
 #include "Cubic.h"
 #include "Rhombohedral.h"
+#include "Shell.h"
 using namespace std;                                                                                 
 using namespace arma;                                                                                
 
@@ -56,7 +57,9 @@ int main(){
     } else if (pShape == 'C' ||  pShape == 'c') {
         myParticle = new Cubic (pSizeCells*latVecNorm, pSizeCells*latVecNorm - sublatVecNorm);
     } else if (pShape == 'R' || pShape == 'r') {
-        myParticle = new Rhombohedral(pSizeCells*latVecNorm, pSizeCells*latVecNorm - sublatVecNorm);
+        myParticle = new Rhombohedral(pSizeCells*latVecNorm, pSizeCells*latVecNorm - sublatVecNorm); 
+	} else if (pShape == 'H' || pShape == 'h') {
+        myParticle = new Shell(pSizeCells*latVecNorm, pSizeCells*latVecNorm - 4*sublatVecNorm);
     } else { cout << "Wrong particle type - exiting" << endl; return 1;}
     cout << "Input: "<< sizeCells << " " << pSizeCells << " " <<  disorderStrength << " " << disorderCoverage << " " << myParticle->shape << endl;
 
@@ -190,14 +193,16 @@ int main(){
     dummy=2*pCells;
     cout << "Picking state #: " << dummy << " with E= " << myParticle->eigvals(dummy) << endl; 
 
-    mat probDensity(2*pCells,4); 
+    mat probDensity(2*pCells,4+100); 
     probDensity(span(0,pCells-1),span(0,2))=myParticle->sublatOne.cols(1,3);
     probDensity(span(pCells,2*pCells-1),span(0,2))=myParticle->sublatTwo.cols(1,3);
 
-    // Calculate probability density of probDensity labelled dummy and all probDensity above it at each lattice site
+    // Calculate probability density of probDensity labelled dummy at each lattice site
     for (int i=0; i<pCells; i++) {
-        probDensity(i,3)=norm(myParticle->eigvecs(span(4*i,4*i+1),dummy))*norm(myParticle->eigvecs(span(4*i,4*i+1),dummy));
-        probDensity(pCells+i,3)=norm(myParticle->eigvecs(span(4*i+2,4*i+3),dummy))*norm(myParticle->eigvecs(span(4*i+2,4*i+3),dummy));
+		for (int j=0; j<100; j++) {
+        probDensity(i,3+j)=norm(myParticle->eigvecs(span(4*i,4*i+1),dummy+j))*norm(myParticle->eigvecs(span(4*i,4*i+1),dummy+j));
+        probDensity(pCells+i,3+j)=norm(myParticle->eigvecs(span(4*i+2,4*i+3),dummy+j))*norm(myParticle->eigvecs(span(4*i+2,4*i+3),dummy+j));
+		}
     }    
     // Save all eigenvalues and a particular eigenvector
     myParticle->eigvals.save("output_eigvals.txt",raw_ascii);

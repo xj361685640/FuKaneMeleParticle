@@ -8,7 +8,7 @@ The original tight-binding Hamiltonian is presented here:
 
 L. Fu, C. L. Kane, and E. J. Mele, Phys. Rev. Lett. 98, 106803 (2007)
 
-Spherical, Cubic and Rhombohedral nanoparticles are supported. These inherit common properties 
+Spherical, Cubic, Rhombohedral and Spherical Shell nanoparticles are supported. These inherit common properties 
 from the Particle class. An example input.txt file is provided. To compile run 'make'. 
 
 Dependencies:
