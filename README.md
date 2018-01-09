@@ -16,9 +16,9 @@ To compile type
 ```
 make
 ```
-To run type 
+To run execute
 ``` 
-main
+./main
 ```
 which will read the file input.txt (example provided) for particle's shape and size and run the calculation.
 The output files contain the eigenvalues and probability density of the associated wavefunctions.
